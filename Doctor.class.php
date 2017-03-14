@@ -35,8 +35,12 @@ class Doctor
 			foreach( $db->Query($sql->Show(['database'=>$db_name])) as $temp1 ){
 				$table_name = $temp1["Tables_in_{$db_name}"];
 
+				//	Get Table index.
+				$indexes = $db->Query($sql->Show(['database'=>$db_name, 'table'=>$table_name, 'index'=>1]));
+				$result[$db_name][$table_name]['indexes'] = $indexes;
+
 				//	Get table define.
-				foreach( $db->Query($sql->Show(['database'=>$db_name,'table'=>$table_name])) as $temp2 ){
+				foreach( $db->Query($sql->Show(['database'=>$db_name, 'table'=>$table_name])) as $temp2 ){
 					$field_name = $temp2['Field'];
 
 					//	Set filed name and define.
@@ -71,7 +75,7 @@ class Doctor
 							}
 						}
 						//	...
-						$result[$db_name][$table_name][$field_name][$key] = $val;
+						$result[$db_name][$table_name]['fileds'][$field_name][$key] = $val;
 					}
 				}
 			}
