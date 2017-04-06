@@ -194,19 +194,36 @@ class Doctor
 
 	/** _Difference
 	 *
+	 * @param  array $inspection
 	 * @param  array $config
 	 * @param  array $result
 	 * @return array
 	 */
-	static private function _Difference($config, $current)
+	static private function _Difference(&$inspection, $config, $current)
+	{
+		self::_DifferenceUser(    $inspection, $config, $current);
+		self::_DifferenceDatabase($inspection, $config, $current);
+		self::_DifferenceTable(   $inspection, $config, $current);
+		self::_DifferenceField(   $inspection, $config, $current);
+		self::_DifferenceStruct(  $inspection, $config, $current);
+	}
+
+	/** _DifferenceUser
+	 *
+	 * @param array $inspection
+	 * @param array $config
+	 * @param array $current
+	 */
+	static private function _DifferenceUser(&$inspection, $config, $current)
 	{
 		//	...
-		$blueprint['databases']	 = self::_DifferenceDatabase($config, $current);
-		$blueprint['tables']	 = self::_DifferenceTable($config, $current, $blueprint);
-		$blueprint['field']		 = self::_DifferenceField($config, $current, $blueprint);
+		$prod = $config['driver'];
+		$host = $config['host'];
+		$port = $config['port'];
+		$user = $config['user'];
 
 		//	...
-		return $blueprint;
+		$inspection[$host][$prod][$port]['users'][$user] = null;
 	}
 
 	/** _DifferenceDatabase
@@ -215,18 +232,18 @@ class Doctor
 	 * @param  array $result
 	 * @return array
 	 */
-	static private function _DifferenceDatabase($config, $current)
+	static private function _DifferenceDatabase(&$inspection, $config, $current)
 	{
 		//	...
-		$result = null;
+		$prod = $config['driver'];
+		$host = $config['host'];
+		$port = $config['port'];
+		$user = $config['user'];
 
 		//	...
-		foreach( ifset($config['databases'], []) as $name => $conf ){
-			$result[$name] = isset($current['databases'][$name]) ? true: false;
+		foreach( ifset($config['databases'], []) as $db_name => $conf ){
+			$inspection[$host][$prod][$port]['user'][$user]['databases'][$db_name] = isset($current['databases'][$db_name ]) ? true: false;
 		}
-
-		//	...
-		return $result;
 	}
 
 	/** _DifferenceTable
@@ -235,25 +252,26 @@ class Doctor
 	 * @param  array $result
 	 * @return array
 	 */
-	static private function _DifferenceTable($config, $current, $blueprint)
+	static private function _DifferenceTable(&$inspection, $config, $current)
 	{
 		//	...
-		$result = null;
+		$prod = $config['driver'];
+		$host = $config['host'];
+		$port = $config['port'];
+		$user = $config['user'];
 
 		//	...
-		foreach( ifset($blueprint['databases'], []) as $db_name => $io ){
-			if(!$io){
+		foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['databases'], []) as $db_name => $io ){
+			//	...
+			if( $io === false ){
 				continue;
 			}
 
 			//	...
-			foreach( ifset($config['databases'][$db_name]['tables'],[]) as $name => $conf ){
-				$result[$db_name][$name] = isset($current['databases'][$db_name]['tables'][$name]) ? true: false;
+			foreach( ifset($config['databases'][$db_name]['tables'],[]) as $table_name => $conf ){
+				$inspection[$host][$prod][$port]['user'][$user]['tables'][$db_name][$table_name] = isset($current['databases'][$db_name]['tables'][$table_name]) ? true: false;
 			}
 		}
-
-		//	...
-		return $result;
 	}
 
 	/** _DifferenceField
@@ -262,53 +280,96 @@ class Doctor
 	 * @param  array $result
 	 * @return array
 	 */
-	static private function _DifferenceField($config, $current, $blueprint)
+	static private function _DifferenceField(&$inspection, $config, $current)
 	{
 		//	...
-		$result = null;
+		$prod = $config['driver'];
+		$host = $config['host'];
+		$port = $config['port'];
+		$user = $config['user'];
 
 		//	...
-		foreach( ifset($blueprint['tables'], []) as $db_name => $temp ){
-			foreach($temp as $table_name => $io){
-				if(!$io){
+		foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['databases'], []) as $db_name => $io ){
+			//	...
+			if( $io === false ){
+				continue;
+			}
+
+			//	...
+			foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['tables'][$db_name], []) as $table_name => $io ){
+				//	...
+				if( $io === false ){
 					continue;
 				}
 
-				foreach( ifset($config['databases'][$db_name]['tables'][$table_name]['fields'],[]) as $name => $conf ){
-					$result[$db_name][$name] = isset($current['databases'][$db_name]['tables'][$table_name]['fields'][$name]) ? true: false;
+				//	...
+				foreach( ifset($config['databases'][$db_name]['tables'][$table_name]['fields'],[]) as $field_name => $conf ){
+					//	...
+					$io = isset($current['databases'][$db_name]['tables'][$table_name]['fields'][$field_name]) ? true: false;
+					$inspection[$host][$prod][$port]['user'][$user]['fields'][$db_name][$table_name][$field_name ] = $io;
+				}
+			}
+		}
+	}
+
+	/** _DifferenceStruct
+	 *
+	 * @param array $inspection
+	 * @param array $config
+	 * @param array $current
+	 */
+	static function _DifferenceStruct(&$inspection, $config, $current)
+	{
+		//	...
+		$prod = $config['driver'];
+		$host = $config['host'];
+		$port = $config['port'];
+		$user = $config['user'];
+
+		//	...
+		foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['databases'], []) as $db_name => $io ){
+			//	...
+			if( $io === false ){
+				continue;
+			}
+
+			//	...
+			foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['tables'][$db_name], []) as $table_name => $io ){
+				//	...
+				if( $io === false ){
+					continue;
+				}
+
+				//	...
+				foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['fields'][$db_name][$table_name], []) as $field_name => $io ){
+
 				}
 			}
 		}
 
-		//	...
-		return $result;
+		d($current['databases'][$db_name]['tables'][$table_name]['fields']);
 	}
 
-	/** Inspection
+	/** Inspect
 	 *
 	 * @param  array $configs
 	 * @return array
 	 */
-	static function Inspection($configs)
+	static function Inspect($configs)
 	{
 		//	...
-		$result = [];
+		$inspection = [];
 
 		//	...
 		foreach( $configs as $config ){
 			//	...
-			$prod = $config['driver'];
-			$host = $config['host'];
-			$port = $config['port'];
-			$user = $config['user'];
-			$key  = "$prod:$host:$port:$user";
 			$current = self::_Inspection($config);
 
 			//	...
-			$blueprint = self::_Difference($config, $current);
+			self::_Difference($inspection, $config, $current);
 		}
 
 		//	...
-		return $blueprint;
+		return $inspection;
 	}
 }
