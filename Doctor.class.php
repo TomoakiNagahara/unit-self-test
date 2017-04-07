@@ -79,12 +79,12 @@ class Doctor
 		return $sql;
 	}
 
-	/** Each inspection by config.
+	/** Get current database setting.
 	 *
 	 * @param  array $config
 	 * @return array
 	 */
-	static private function _Inspection($config)
+	static private function _GetCurrentDatabaseSetting($config)
 	{
 		//	...
 		if( empty($config) ){
@@ -163,19 +163,28 @@ class Doctor
 								$en = strpos($val, ')');
 								$length = substr($val, $st+1, $en-$st-1);
 								$val    = substr($val, 0, $st);
-								$_field['length'] = $length;
+								$_field['length'] = (int)$length;
 							}
-						}else // null
+						}else
+						// null is permit null.
 						if( $key === 'null' ){
 							$val = $val === 'YES' ? true: false;
-						}else // key is index.
+						}else
+						// key is index.
 						if( $key === 'key' ){
 							if( $val ){
 								$val = strtolower($val);
 							}else{
 								continue;
 							}
-						}else // collation is near charset.
+						}else
+						//	extra is extra setting.
+						if( $key === 'extra' ){
+							if(!$val){
+								$val = null;
+							}
+						}else
+						// collation is near charset.
 						if( $key === 'collation' ){
 							if(!$val){
 								continue;
@@ -325,15 +334,15 @@ class Doctor
 		$host = $config['host'];
 		$port = $config['port'];
 		$user = $config['user'];
-
-		//	...
+d($current);
+		//	database
 		foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['databases'], []) as $db_name => $io ){
 			//	...
 			if( $io === false ){
 				continue;
 			}
 
-			//	...
+			//	table
 			foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['tables'][$db_name], []) as $table_name => $io ){
 				//	...
 				if( $io === false ){
@@ -341,13 +350,117 @@ class Doctor
 				}
 
 				//	...
-				foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['fields'][$db_name][$table_name], []) as $field_name => $io ){
+				$table = self::_DifferenceStructIndex(
+					$config['databases'][$db_name]['tables'][$table_name]['fields'],
+					$config['databases'][$db_name]['tables'][$table_name]['indexes']
+				);
 
+				//	field
+				foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['fields'][$db_name][$table_name], []) as $field_name => $io ){
+					//	...
+					if( $io === false ){
+						continue;
+					}
+d($field_name);
+					//	...
+					$inspection[$host][$prod][$port]['user'][$user]['struct'][$db_name][$table_name][$field_name] = self::_DifferenceStructResult(
+						$table[$field_name],
+						$current['databases'][$db_name]['tables'][$table_name]['fields'][$field_name]
+					);
 				}
 			}
 		}
+	}
 
-		d($current['databases'][$db_name]['tables'][$table_name]['fields']);
+	/** Touch table's field struct by index.
+	 *
+	 */
+	static function _DifferenceStructIndex($table, $index)
+	{
+		//	auto increment
+		if( $field_name = ifset($index['auto_increment']) ){
+			if( empty($table[$field_name]['key']) ){
+				$table[$field_name]['key'] = 'pri';
+			}
+			if( empty($table[$field_name]['null']) ){
+				$table[$field_name]['null'] = false;
+			}
+			if( empty($table[$field_name]['type']) ){
+				      $table[$field_name]['type'] = 'int';
+			}
+			if( empty($table[$field_name]['extra']) ){
+				      $table[$field_name]['extra'] = 'auto_increment';
+			}
+		}
+
+		//	primary key
+		if( $field_name = ifset($index['primary']) ){
+			if( empty($table[$field_name]['type']) ){
+				$table[$field_name]['type'] = 'int';
+			}
+		}
+
+		//	...
+		foreach( $table as $field_name => $config ){
+			//	type
+			if( $config['type'] === 'int' ){
+				if( empty($table[$field_name]['length']) ){
+						  $table[$field_name]['length'] = 11;
+				}
+			}else
+			if( $config['type'] === 'timestamp' ){
+				if( empty($table[$field_name]['null']) ){
+					$table[$field_name]['default'] = 'CURRENT_TIMESTAMP';
+					$table[$field_name]['extra']   = 'on_update_CURRENT_TIMESTAMP';
+				}
+			}
+
+			//	null
+			if(!isset($config['null'])){
+				$table[$field_name]['null'] = true;
+			}
+
+			//	comment
+			if(!isset($config['comment'])){
+				$table[$field_name]['comment'] = '';
+			}
+		}
+
+		return $table;
+	}
+
+	/** _DifferenceStructResult
+	 *
+	 * @param unknown $inspection
+	 * @param unknown $config
+	 * @param unknown $current
+	 */
+	static function _DifferenceStructResult($config, $current)
+	{
+		$result = [];
+
+		//	...
+		foreach( $current as $key => $val ){
+			if( $key === 'field' or $key === 'privileges' ){
+				continue;
+			}
+
+			//	...
+			$value = ifset($config[$key]);
+
+			//	...
+			$result[$key] = $value === $current[$key] ? true:false;
+
+			if(!$result[$key]){
+				d($key, $value, $current[$key]);
+			}
+		}
+
+		if( array_search(false, $result) ){
+			d($current);
+		}
+
+		return $result;
 	}
 
 	/** Inspect
@@ -363,8 +476,8 @@ class Doctor
 		//	...
 		foreach( $configs as $config ){
 			//	...
-			$current = self::_Inspection($config);
-
+			$current = self::_GetCurrentDatabaseSetting($config);
+//d('current', $current);
 			//	...
 			self::_Difference($inspection, $config, $current);
 		}
