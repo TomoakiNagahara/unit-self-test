@@ -8,5 +8,6 @@
  * @author    Tomoaki Nagahara <tomoaki.nagahara@gmail.com>
  * @copyright Tomoaki Nagahara All right reserved.
  */
-include('Doctor.class.php');
+include(__DIR__.'/Inspector.class.php');
+include(__DIR__.'/Current.class.php');
 return true;
