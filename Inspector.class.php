@@ -254,7 +254,7 @@ class Inspector
 						continue;
 					}
 
-//d($db_name, $table_name, $field_name);
+//	d($db_name, $table_name, $field_name);
 
 					//	...
 					$inspection[$host][$prod][$port]['user'][$user]['struct'][$db_name][$table_name][$field_name] = self::_DifferenceStructResult(
@@ -368,12 +368,12 @@ class Inspector
 		return $result;
 	}
 
-	/** Inspect
+	/** Inspections
 	 *
 	 * @param  array $configs
 	 * @return array
 	 */
-	static function Inspect($configs)
+	static function Inspections($configs)
 	{
 		//	...
 		if( empty($configs) ){
@@ -406,5 +406,13 @@ class Inspector
 
 		//	...
 		return $inspection;
+	}
+
+	/** Output javascript file.
+	 *
+	 */
+	static function Js()
+	{
+		echo file_get_contents(__DIR__.'/Inspector.js');
 	}
 }
