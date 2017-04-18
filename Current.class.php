@@ -41,11 +41,22 @@ class Current
 		$_table = null;
 		$_field = null;
 
+		//	...
+		$prod = $config['driver'];
+		$host = $config['host'];
+		$port = $config['port'];
+		$user = $config['user'];
+
+		//	...
+		$result[$host][$prod][$port]['users'][$user] = $db ? true: false;
+
+		//	...
+		if( !$db ){
+			return;
+		}
+
 		//	Get database name list.
 		foreach( $db->Query($sql->Show()) as $temp ){
-			//	...
-			$result['host:port:user'] = null;
-
 			//	...
 			$db_name = $temp['Database'];
 			if( $db_name === 'information_schema' ){
@@ -135,8 +146,5 @@ class Current
 				}
 			}
 		}
-
-		//	...
-		return $result;
 	}
 }

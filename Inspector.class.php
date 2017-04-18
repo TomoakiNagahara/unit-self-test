@@ -29,7 +29,7 @@ class Inspector
 	 * @param  array $config
 	 * @return DB
 	 */
-	static private function _init_db($config)
+	static private function _get_db($config)
 	{
 		/* @var $db DB */
 		static $pool;
@@ -65,7 +65,7 @@ class Inspector
 	 * @param  array $db
 	 * @return SQL
 	 */
-	static private function _init_sql($db)
+	static private function _get_sql($db)
 	{
 		/* @var $sql SQL */
 		static $sql;
@@ -115,7 +115,7 @@ class Inspector
 		$user = $config['user'];
 
 		//	...
-		$inspection[$host][$prod][$port]['users'][$user] = null;
+		$inspection[$host][$prod][$port]['users'][$user] = $current[$host][$prod][$port]['users'][$user];
 	}
 
 	/** _DifferenceDatabase
@@ -388,20 +388,19 @@ class Inspector
 		//	...
 		foreach( $configs as $config ){
 			//	...
-			if(!$db = self::_init_db($config) ){
-				return;
+			$db  = null;
+			$sql = null;
+
+			//	...
+			if( $db  = self::_get_db($config) ){
+				$sql = self::_get_sql($db);
 			}
 
 			//	...
-			if(!$sql = self::_init_sql($db) ){
-				return;
-			}
+			UnitSelfTest\Current::Get($current, $config, $db, $sql);
 
 			//	...
-			if( UnitSelfTest\Current::Get($current, $config, $db, $sql) ){
-				//	...
-				self::_Difference($inspection, $config, $current);
-			}
+			self::_Difference($inspection, $config, $current);
 		}
 
 		//	...
