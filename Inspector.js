@@ -36,8 +36,9 @@ OP.Selftest.Inspection = function(){
 
 		//	...
 		var root = document.createElement('div');
+			root.className = 'root';
 		var list = document.createElement('ol');
-			list.className = 'root';
+			list.classList.add('root');
 
 		//	...
 		root.appendChild(list);
@@ -136,6 +137,7 @@ OP.Selftest.Inspection = function(){
 
 			//	...
 			var li = document.createElement('li');
+				li.dataset.user   = user_name;
 				li.dataset.result = result;
 				li.appendChild(span);
 			list.appendChild(li);
@@ -145,8 +147,112 @@ OP.Selftest.Inspection = function(){
 	//	...
 	function __user(list, json){
 		for(var user_name in json){
-			console.log(user_name);
+			//	...
+			var root = __search_root(list);
+			var node = list.querySelector('li[data-user="' + user_name + '"]');
+			var result = node.dataset.result;
+
+			//	...
+			if( result !== "true" ){
+				console.log(user_name, result);
+				continue;
+			}
+
+			//	...
+			var table_list = document.createElement('ol');
+			node.appendChild(table_list);
+
+			//	...
+			__tables(table_list, json[user_name]['tables'][user_name]);
+
+			//	..
+			__fields(table_list, json[user_name]['fields'][user_name]);
 		}
+	}
+
+	//	...
+	function __tables(list, json){
+		//	...
+		for(var table_name in json){
+			var result = json[table_name];
+
+			//	...
+			var span = document.createElement('span');
+				span.innerText = table_name;
+
+			//	...
+			var li   = document.createElement('li');
+				li.dataset.table  = table_name;
+				li.dataset.result = result;
+				li.appendChild(span);
+
+			//	...
+			list.appendChild(li);
+		}
+	}
+
+	//	...
+	function __fields(list, json){
+		//	...
+		for(var table_name in json){
+			var target = list.querySelector('li[data-table="' + table_name + '"]');
+			var result = target.dataset.result;
+			if( result === "false" ){
+				continue;
+			}
+			console.log(table_name, result);
+
+			//	...
+			var field_list = document.createElement('ol');
+			target.appendChild(field_list);
+
+			//	...
+			__field(field_list, json[table_name]);
+		}
+	}
+
+	//	...
+	function __field(list, json){
+		console.log(list, json);
+		for(var field_name in json){
+			var result = json[field_name];
+
+			//	...
+			var span = document.createElement('span');
+				span.innerText = field_name;
+
+			//	...
+			var li   = document.createElement('li');
+				li.dataset.result = result;
+				li.appendChild(span);
+
+			//	...
+			list.appendChild(li);
+		}
+	}
+
+	//	...
+	function __search_root(node){
+		//	...
+		var parent_node = node.parentNode;
+		var tag_name    = parent_node.tagName;
+		var result_node = null;
+
+		//	...
+		switch( tag_name ){
+			case 'OL':
+				var class_name = parent_node.className;
+				if( class_name === 'root' ){
+					result_node = parent_node;
+				}else{
+					console.log( tag_name, class_name );
+				}
+				break;
+			default:
+				result_node = __search_root(parent_node);
+		}
+
+		return result_node;
 	}
 };
 
