@@ -218,8 +218,6 @@ class Inspector
 		$port = $config['port'];
 		$user = $config['user'];
 
-//	d('current', $current);
-
 		//	database
 		foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['databases'], []) as $db_name => $io ){
 			//	...
@@ -234,6 +232,11 @@ class Inspector
 			foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['tables'][$db_name], []) as $table_name => $io ){
 				//	...
 				if( $io === false ){
+					continue;
+				}
+
+				//	...
+				if( empty($config['databases'][$db_name]['tables'][$table_name]['fields']) ){
 					continue;
 				}
 
@@ -254,10 +257,8 @@ class Inspector
 						continue;
 					}
 
-//	d($db_name, $table_name, $field_name);
-
 					//	...
-					$inspection[$host][$prod][$port]['user'][$user]['struct'][$db_name][$table_name][$field_name] = self::_DifferenceStructResult(
+					$inspection[$host][$prod][$port]['user'][$user]['structs'][$db_name][$table_name][$field_name] = self::_DifferenceStructResult(
 						$table[$field_name],
 						$current['databases'][$db_name]['tables'][$table_name]['fields'][$field_name]
 					);

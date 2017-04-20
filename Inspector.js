@@ -32,8 +32,6 @@ OP.Selftest.Inspection = function(){
 
 	//	...
 	function __root(json){
-	//	console.dir(json);
-
 		//	...
 		var root = document.createElement('div');
 			root.className = 'root';
@@ -146,6 +144,7 @@ OP.Selftest.Inspection = function(){
 
 	//	...
 	function __user(list, json){
+		//	Each user.
 		for(var user_name in json){
 			//	...
 			var root = __search_root(list);
@@ -162,11 +161,39 @@ OP.Selftest.Inspection = function(){
 			var table_list = document.createElement('ol');
 			node.appendChild(table_list);
 
-			//	...
-			__tables(table_list, json[user_name]['tables'][user_name]);
+			//	Each database at each user.
+			for(var db_name in json[user_name]['databases']){
+				var result = json[user_name]['databases'][db_name];
+				if( result === false ){
+					continue;
+				}
 
-			//	..
-			__fields(table_list, json[user_name]['fields'][user_name]);
+				//	...
+				['tables','fields','structs'].map(function(key){
+					if( json[user_name][key] ){
+						if(json[user_name][key][db_name]){
+							//	...
+						//	__tables(table_list, json[user_name][key][db_name]);
+
+							//	..
+						//	__fields(table_list, json[user_name][key][db_name]);
+
+							//	..
+						//	__structs(table_list, json[user_name][key][db_name]);
+
+							//	return is continue.
+							return;
+						}
+					}
+
+					//	...
+					var p = document.createElement('p');
+						p.className = 'error';
+						p.innerText = `User ${user_name} config is ${key} has not been set.`;
+					var node = list.querySelector(`li[data-user="${user_name}"]`);
+						node.appendChild(p);
+				});
+			}
 		}
 	}
 
@@ -200,20 +227,18 @@ OP.Selftest.Inspection = function(){
 			if( result === "false" ){
 				continue;
 			}
-			console.log(table_name, result);
 
 			//	...
 			var field_list = document.createElement('ol');
 			target.appendChild(field_list);
 
 			//	...
-			__field(field_list, json[table_name]);
+		//	__field(field_list, json[table_name]);
 		}
 	}
 
 	//	...
 	function __field(list, json){
-		console.log(list, json);
 		for(var field_name in json){
 			var result = json[field_name];
 
@@ -229,6 +254,28 @@ OP.Selftest.Inspection = function(){
 			//	...
 			list.appendChild(li);
 		}
+	}
+
+	//	...
+	function __structs(list, json){
+	//	console.log(list, json);
+		for(var db_name in json){
+		//	console.log(db_name);
+			for(var table_name in json[db_name]){
+				for(var field_name in json[db_name][table_name]){
+				//	console.log(db_name, table_name, field_name);
+					for(var struct_name in json[db_name][table_name]){
+					//	console.log(db_name, table_name, field_name, struct_name);
+					}
+				}
+			}
+		}
+	}
+
+	//	...
+	function __struct(list, json){
+		console.log(list, json);
+
 	}
 
 	//	...
