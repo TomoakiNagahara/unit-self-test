@@ -148,134 +148,161 @@ OP.Selftest.Inspection = function(){
 		for(var user_name in json){
 			//	...
 			var root = __search_root(list);
-			var node = list.querySelector('li[data-user="' + user_name + '"]');
+			var node = list.querySelector(`li[data-user="${user_name}"]`);
 			var result = node.dataset.result;
 
-			//	...
+			//	Check to each user connection.
 			if( result !== "true" ){
-				console.log(user_name, result);
+				console.log('Database connection: ', user_name, result);
 				continue;
 			}
 
 			//	...
-			var table_list = document.createElement('ol');
-			node.appendChild(table_list);
+			__databases(node, json[user_name]['databases']);
 
-			//	Each database at each user.
-			for(var db_name in json[user_name]['databases']){
-				var result = json[user_name]['databases'][db_name];
-				if( result === false ){
-					continue;
-				}
+			//	...
+			__tables(node, json[user_name]['tables']);
 
-				//	...
-				['tables','fields','structs'].map(function(key){
-					if( json[user_name][key] ){
-						if(json[user_name][key][db_name]){
-							//	...
-						//	__tables(table_list, json[user_name][key][db_name]);
+			//	...
+			__fields(node, json[user_name]['fields']);
 
-							//	..
-						//	__fields(table_list, json[user_name][key][db_name]);
+			//	...
+			__structs(node, json[user_name]['structs']);
+		}
+	}
 
-							//	..
-						//	__structs(table_list, json[user_name][key][db_name]);
+	//	...
+	function __databases(list, json){
+		if( json === undefined ){
+			return;
+		}
 
-							//	return is continue.
-							return;
-						}
-					}
+		//	...
+		var ol = document.createElement('ol');
+		list.appendChild(ol);
 
-					//	...
-					var p = document.createElement('p');
-						p.className = 'error';
-						p.innerText = `User ${user_name} config is ${key} has not been set.`;
-					var node = list.querySelector(`li[data-user="${user_name}"]`);
-						node.appendChild(p);
-				});
-			}
+		//	...
+		for(var db_name in json){
+			//	...
+			var result = json[db_name];
+
+			//	...
+			var li = document.createElement('li');
+				li.dataset.database = db_name;
+				li.dataset.result   = result;
+			ol.appendChild(li);
+
+			//	...
+			var span = document.createElement('span');
+				span.innerText = db_name;
+				li.appendChild(span);
 		}
 	}
 
 	//	...
 	function __tables(list, json){
+		if( json === undefined ){
+			return;
+		}
+
 		//	...
-		for(var table_name in json){
-			var result = json[table_name];
+		for(var db_name in json){
+			//	...
+			var node = list.querySelector(`li[data-database="${db_name}"]`);
 
 			//	...
-			var span = document.createElement('span');
-				span.innerText = table_name;
+			var ol = document.createElement('ol');
+			node.appendChild(ol);
 
 			//	...
-			var li   = document.createElement('li');
-				li.dataset.table  = table_name;
-				li.dataset.result = result;
-				li.appendChild(span);
+			for(var table_name in json[db_name]){
+				var result = json[db_name][table_name];
 
-			//	...
-			list.appendChild(li);
+				//	...
+				var span = document.createElement('span');
+					span.innerText = table_name;
+
+				//	...
+				var li = document.createElement('li');
+					li.dataset.table  = table_name;
+					li.dataset.result = result;
+					li.appendChild(span);
+				ol.appendChild(li);
+			}
 		}
 	}
 
 	//	...
 	function __fields(list, json){
+		if( json === undefined ){
+			return;
+		}
+
 		//	...
-		for(var table_name in json){
-			var target = list.querySelector('li[data-table="' + table_name + '"]');
-			var result = target.dataset.result;
-			if( result === "false" ){
-				continue;
-			}
-
-			//	...
-			var field_list = document.createElement('ol');
-			target.appendChild(field_list);
-
-			//	...
-		//	__field(field_list, json[table_name]);
-		}
-	}
-
-	//	...
-	function __field(list, json){
-		for(var field_name in json){
-			var result = json[field_name];
-
-			//	...
-			var span = document.createElement('span');
-				span.innerText = field_name;
-
-			//	...
-			var li   = document.createElement('li');
-				li.dataset.result = result;
-				li.appendChild(span);
-
-			//	...
-			list.appendChild(li);
-		}
-	}
-
-	//	...
-	function __structs(list, json){
-	//	console.log(list, json);
 		for(var db_name in json){
-		//	console.log(db_name);
 			for(var table_name in json[db_name]){
+				//	...
+				var node = list.querySelector(`li[data-table="${table_name}"]`);
+
+				//	...
+				var ol = document.createElement('ol');
+				node.appendChild(ol);
+
+				//	...
 				for(var field_name in json[db_name][table_name]){
-				//	console.log(db_name, table_name, field_name);
-					for(var struct_name in json[db_name][table_name]){
-					//	console.log(db_name, table_name, field_name, struct_name);
-					}
+					var result = json[db_name][table_name][field_name];
+
+					//	...
+					var span = document.createElement('span');
+						span.innerText = field_name;
+
+					//	...
+					var li = document.createElement('li');
+						li.dataset.field  = field_name;
+						li.dataset.result = result;
+						li.appendChild(span);
+					ol.appendChild(li);
 				}
 			}
 		}
 	}
 
 	//	...
-	function __struct(list, json){
-		console.log(list, json);
+	function __structs(list, json){
+		if( json === undefined ){
+			return;
+		}
 
+		//	...
+		for(var db_name in json){
+			for(var table_name in json[db_name]){
+				for(var field_name in json[db_name][table_name]){
+					//	...
+					var node = list.querySelector(`li[data-field="${field_name}"]`);
+
+					//	...
+					var ol = document.createElement('ol');
+					node.appendChild(ol);
+
+					//	...
+					for(var parameter in json[db_name][table_name][field_name]){
+						//	...
+						var result = json[db_name][table_name][field_name][parameter];
+
+						//	...
+						var span = document.createElement('span');
+							span.innerText = parameter;
+
+						//	...
+						var li = document.createElement('li');
+							li.dataset.parameter = parameter;
+							li.dataset.result    = result;
+							li.appendChild(span);
+						ol.appendChild(li);
+					}
+				}
+			}
+		}
 	}
 
 	//	...

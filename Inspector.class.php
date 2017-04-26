@@ -236,19 +236,12 @@ class Inspector
 				}
 
 				//	...
-				if( empty($config['databases'][$db_name]['tables'][$table_name]['fields']) ){
-					continue;
-				}
-
-				//	...
+				$fields    = $config['databases'][$db_name]['tables'][$table_name]['fields']    ?? [];
+				$indexes   = $config['databases'][$db_name]['tables'][$table_name]['indexes']   ?? [];
 				$collation = $config['databases'][$db_name]['tables'][$table_name]['collation'] ?? $collation;
 
 				//	...
-				$table = self::_DifferenceStructAdjust(
-					$config['databases'][$db_name]['tables'][$table_name]['fields'],
-					$config['databases'][$db_name]['tables'][$table_name]['indexes'],
-					$collation
-				);
+				$table = self::_DifferenceStructAdjust($fields, $indexes, $collation);
 
 				//	field
 				foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['fields'][$db_name][$table_name], []) as $field_name => $io ){
