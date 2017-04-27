@@ -226,7 +226,7 @@ class Inspector
 			}
 
 			//	...
-			$collation = $config['databases'][$db_name]['collation'] ?? null;
+			$collation = ifset($config['databases'][$db_name]['collation'], null);
 
 			//	table
 			foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['tables'][$db_name], []) as $table_name => $io ){
@@ -236,12 +236,12 @@ class Inspector
 				}
 
 				//	...
-				$fields    = $config['databases'][$db_name]['tables'][$table_name]['fields']    ?? [];
-				$indexes   = $config['databases'][$db_name]['tables'][$table_name]['indexes']   ?? [];
-				$collation = $config['databases'][$db_name]['tables'][$table_name]['collation'] ?? $collation;
+				$fields    = ifset($config['databases'][$db_name]['tables'][$table_name]['fields']   , []);
+				$indexes   = ifset($config['databases'][$db_name]['tables'][$table_name]['indexes']  , []);
+				$collation = ifset($config['databases'][$db_name]['tables'][$table_name]['collation'], $collation);
 
 				//	...
-				$table = self::_DifferenceStructAdjust($fields, $indexes, $collation);
+				$fields = self::_DifferenceStructAdjust($fields, $indexes, $collation);
 
 				//	field
 				foreach( ifset($inspection[$host][$prod][$port]['user'][$user]['fields'][$db_name][$table_name], []) as $field_name => $io ){
@@ -252,7 +252,7 @@ class Inspector
 
 					//	...
 					$inspection[$host][$prod][$port]['user'][$user]['structs'][$db_name][$table_name][$field_name] = self::_DifferenceStructResult(
-						$table[$field_name],
+						$fields[$field_name],
 						$current['databases'][$db_name]['tables'][$table_name]['fields'][$field_name]
 					);
 				}
@@ -263,69 +263,87 @@ class Inspector
 	/** Touch table's field struct by index.
 	 *
 	 */
-	static function _DifferenceStructAdjust($table, $index, $collation)
+	static function _DifferenceStructAdjust($fields, $indexes, $collation)
 	{
 		//	auto increment
-		if( $field_name = ifset($index['auto_increment']) ){
-			if( empty($table[$field_name]['key']) ){
-				$table[$field_name]['key'] = 'pri';
+		if( $field_name = ifset($indexes['auto_increment']) ){
+			if( empty($fields[$field_name]['key']) ){
+				$fields[$field_name]['key'] = 'pri';
 			}
-			if( empty($table[$field_name]['null']) ){
-				$table[$field_name]['null'] = false;
+			if( empty($fields[$field_name]['null']) ){
+				$fields[$field_name]['null'] = false;
 			}
-			if( empty($table[$field_name]['type']) ){
-				      $table[$field_name]['type'] = 'int';
+			if( empty($fields[$field_name]['type']) ){
+				      $fields[$field_name]['type'] = 'int';
 			}
-			if( empty($table[$field_name]['extra']) ){
-				      $table[$field_name]['extra'] = 'auto_increment';
+			if( empty($fields[$field_name]['extra']) ){
+				      $fields[$field_name]['extra'] = 'auto_increment';
 			}
 		}
 
 		//	primary key
-		if( $field_name = ifset($index['primary']) ){
-			if( empty($table[$field_name]['type']) ){
-				$table[$field_name]['type'] = 'int';
+		if( $field_name = ifset($indexes['primary']) ){
+			if( empty($fields[$field_name]['type']) ){
+				$fields[$field_name]['type'] = 'int';
 			}
 		}
 
 		//	...
-		foreach( $table as $field_name => $config ){
+		foreach( $fields as $field_name => $config ){
 			//	type
 			switch( $type = $config['type'] ){
 				case 'int':
-					if( empty($table[$field_name]['length']) ){
-						$table[$field_name]['length'] = 11;
+					if( empty($fields[$field_name]['length']) ){
+						$fields[$field_name]['length'] = 11;
 					}
 					break;
 
 				case 'text':
 				case 'char':
 				case 'varchar':
-					if( empty($table[$field_name]['collation']) ){
-							  $table[$field_name]['collation'] = $collation;
+					if( empty($fields[$field_name]['collation']) ){
+							  $fields[$field_name]['collation'] = $collation;
 					}
 					break;
 
 				case 'timestamp':
-					if( empty($table[$field_name]['null']) ){
-						$table[$field_name]['default'] = 'current_timestamp';
-						$table[$field_name]['extra']   = 'on update current_timestamp';
-					}
+					$fields[$field_name]['default'] = ifset($fields[$field_name]['default'], 'current_timestamp');
+					$fields[$field_name]['extra']   = ifset($fields[$field_name]['extra']  , 'on update current_timestamp');
 					break;
 			}
 
 			//	null
-			if(!isset($config['null'])){
-				$table[$field_name]['null'] = true;
+			if( !isset($config['null']) ){
+				$fields[$field_name]['null'] = true;
+			}else{
+				$fields[$field_name]['null'] = $config['null'] ? true: false;
 			}
 
 			//	comment
-			if(!isset($config['comment'])){
-				$table[$field_name]['comment'] = '';
+			if( empty($config['comment']) ){
+				$fields[$field_name]['comment'] = '';
+			}
+
+			//	index
+			switch( $type = ifset($config['index']) ){
+				case null:
+				case false:
+					break;
+
+				case true:
+					$fields[$field_name]['key'] = 'mul';
+					break;
+
+				case 'unique':
+					$fields[$field_name]['key'] = 'uni';
+					break;
+
+				default:
+					$fields[$field_name]['key'] = 'mul';
 			}
 		}
 
-		return $table;
+		return $fields;
 	}
 
 	/** _DifferenceStructResult
@@ -351,7 +369,7 @@ class Inspector
 			$result[$key] = $value === $current[$key] ? true: false;
 
 			if( $result[$key] === false ){
-				d($key, $value, $current[$key]);
+				d($key, 'config', $value, 'current', $current[$key]);
 			}
 		}
 

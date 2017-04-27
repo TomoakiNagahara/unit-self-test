@@ -28,6 +28,9 @@ OP.Selftest.Inspection = function(){
 		//	...
 		inspection.innerText = '';
 		inspection.appendChild(root);
+
+		//	...
+		setTimeout(function(){ __finished(root); }, 1000);
 	}
 
 	//	...
@@ -242,7 +245,7 @@ OP.Selftest.Inspection = function(){
 		for(var db_name in json){
 			for(var table_name in json[db_name]){
 				//	...
-				var node = list.querySelector(`li[data-table="${table_name}"]`);
+				var node = list.querySelector(`li[data-database="${db_name}"] li[data-table="${table_name}"]`);
 
 				//	...
 				var ol = document.createElement('ol');
@@ -278,7 +281,7 @@ OP.Selftest.Inspection = function(){
 			for(var table_name in json[db_name]){
 				for(var field_name in json[db_name][table_name]){
 					//	...
-					var node = list.querySelector(`li[data-field="${field_name}"]`);
+					var node = list.querySelector(`li[data-database="${db_name}"] li[data-table="${table_name}"] li[data-field="${field_name}"]`);
 
 					//	...
 					var ol = document.createElement('ol');
@@ -299,6 +302,10 @@ OP.Selftest.Inspection = function(){
 							li.dataset.result    = result;
 							li.appendChild(span);
 						ol.appendChild(li);
+
+						if( !result ){
+							console.log(db_name, table_name, field_name, parameter, result);
+						}
 					}
 				}
 			}
@@ -327,6 +334,38 @@ OP.Selftest.Inspection = function(){
 		}
 
 		return result_node;
+	}
+
+	//	...
+	function __finished(root){
+		//	...
+		var nodes = root.querySelectorAll('li[data-result="false"]');
+		for(var i in nodes){
+			__finished_node(nodes[i]);
+		}
+
+		//	...
+		var nodes = root.querySelectorAll('li[data-result="true"]');
+		for(var i=0; i<nodes.length; i++){
+			var node = nodes[i];
+			var span = node.querySelector('span');
+				span.className = 'fadeout';
+			//	node.className = 'fadeout';
+		}
+	}
+
+	//	...
+	function __finished_node(node){
+		if( !node.parentNode || node.parentNode.tagName === 'DIV' ){
+			return;
+		}
+
+		var parent_node = node.parentNode.parentNode;
+		var tag_name    = parent_node.tagName;
+		if( tag_name === 'LI' ){
+			parent_node.dataset.result = false;
+			__finished_node(parent_node);
+		}
 	}
 };
 
